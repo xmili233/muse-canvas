@@ -1,91 +1,83 @@
 # Muse — 自由创作画板
 
-视觉按用户提供的 Causal 截图实现：极简窄侧栏、浅灰点阵画布、白色节点卡片、底部胶囊工具栏。基于 React 19、TypeScript 和 Vite 的本地 Web 应用。左侧为可收起的画板列表，中间是可编辑画布，右侧是 Agent；两侧可独立收起，窄屏下改为覆盖式侧栏。
+Muse 是一个用来收集灵感、整理思路和探索创作方向的 Web 画板。你可以把便签、文字、图片、形状和连线放在同一块画布上，再通过右侧的 Agent 演示体验「提问 → 预览建议 → 加入画板」的流程。
 
-## 运行
+无需注册或配置模型 Key，打开即可使用。画板与对话保存在当前浏览器中。
 
-需要 Node.js 24+。
+## 适合谁
+
+- **创作者、设计师和策划者**：收集素材、制作情绪板、梳理选题，将零散想法组织成可继续创作的方向。
+- **产品与前端开发者**：体验画布编辑和 Agent 协作流程，通过项目内的「设计讲解」了解交互设计、数据管理和工程取舍。
+- **面试官与项目评审者**：直接操作作品，结合设计讲解了解项目的实现范围、技术选择和完成度。
+
+## 在线体验
+
+**状态：已上线。** 通过 GitHub Pages 提供在线体验，无需安装或注册：
+
+- [打开 Muse 画板](https://xmili233.github.io/muse-canvas/)
+- [直接阅读设计讲解](https://xmili233.github.io/muse-canvas/#design/overview)
+- [查看源代码](https://github.com/xmili233/muse-canvas)
+
+在线版本的数据保存在当前浏览器中，也可以按照下方「本地运行」启动项目。
+
+## 可以做什么
+
+- **自由组织想法**：添加和编辑便签、文字、图片、形状与连线；支持拖动、调整大小、自由绘制和语音示例播放。
+- **管理多个画板**：创建、搜索、重命名、复制、删除和 JSON 导入，在不同主题之间切换。
+- **浏览与编辑画布**：平移、缩放、适应视图、撤销与重做；两侧面板可收起，窄屏也可使用。
+- **体验 Agent 协作**：引用画板文字提出问题，预览示例建议，再决定是否将便签加入画板。
+- **了解背后的设计**：从页面顶部打开「设计讲解」，阅读核心流程、数据存储、扩展设计与工程取舍。
+
+首次打开会展示「周末城市漫游」示例画板，可以直接编辑，也可以新建自己的画板。
+
+## 建议体验顺序
+
+1. 浏览 Welcome 示例，尝试拖动便签、编辑文字或添加图片。
+2. 在右侧 Agent 中提出问题，查看建议预览，将需要的便签加入画板。
+3. 新建一个画板整理自己的主题，刷新页面后查看内容是否恢复。
+4. 点击顶部「设计讲解」，结合刚才的操作了解实现方式。
+
+## 当前实现范围
+
+- **Agent 为本地模拟演示**：由浏览器内的规则生成示例建议，不连接真实模型，不访问外部模型服务，也不提供模型 Key 配置。
+- **数据保存在本机浏览器**：画板、对话、输入草稿和个人偏好使用 localStorage 持久化；没有云端同步或多人协作。清理站点数据会清除这些内容。
+- **个人资料用于本地展示**：可修改名称和头像颜色，不涉及账号注册或登录。
+- **资源有大小限制**：图片最大 2 MB，导入画板 JSON 最大 8 MB；存储空间不足时会显示保存失败提示。
+- **规划能力有明确标记**：工具安装与通用权限执行属于设计方案，讲解中会与已实现功能区分。
+
+## 本地运行
+
+需要 Node.js 24+。在项目目录执行：
 
 ```bash
-npm install
+npm ci
 npm run dev
 ```
 
-打开 `http://localhost:5173`。
+打开 <http://localhost:5173/>，或直接访问[设计讲解](http://localhost:5173/#design/overview)。
 
 ```bash
-npm test       # 数据、历史、导入与持久化、画布几何和 Agent 模拟逻辑测试
-npm run build # TypeScript 检查和生产构建
-npm start     # 构建后启动本地生产服务，http://localhost:4173
+npm test       # 数据、画布历史、持久化与 Agent 模拟逻辑测试
+npm run build # TypeScript 检查及生产构建，输出到 dist/
+npm start     # 构建后启动本地生产服务：http://localhost:4173
 ```
 
-## 已实现
+## 部署到 GitHub Pages
 
-- 画板创建、搜索、切换、重命名、复制、删除、JSON 导入。
-- 便签、文字、形状、图片、语音卡片和子画板入口；元素拖动、调整大小、双击编辑、颜色、复制、删除。
-- 自由绘制与语音示例播放；可替换本地音频（不会自动转录）。Welcome 使用原创的「周末城市漫游」案例，包含街景图片、行程与灵感便签、可下载清单。
-- 画布平移、缩放、适应视图、元素连线、撤销与重做。
-- 自动保存在当前浏览器的 localStorage；图片限 2 MB，画板导入限 8 MB。存储不足时显示保存失败提示。
-- 账户菜单、可编辑的本地个人资料、头像颜色、画布偏好、独立快捷键面板。
-- 键盘快捷键、可收起侧栏、窄屏布局、减少动态效果设置。
+Muse 的运行功能都在浏览器中完成，可以构建为静态站点，由 GitHub Pages 托管；不需要部署模型服务或数据库。Node.js 仅用于构建和本地预览。
 
-## 账户与设置
+仓库已公开，并通过 [GitHub Actions 工作流](./.github/workflows/deploy.yml)自动部署。推送到 `main` 后，工作流会安装依赖、运行测试、构建站点，再将 `dist/` 发布到 GitHub Pages；也可在 [Actions 页面](https://github.com/xmili233/muse-canvas/actions/workflows/deploy.yml)手动触发。
 
-点击左下角名称打开账户菜单。个人资料中可修改显示名称与头像颜色；设置中可切换画布网格及启动时的侧栏状态。更改保存在 `muse-preferences-v1`，与画板内容分开存储。快捷键与关于信息各有独立面板。
+线上构建使用 `npm run build -- --base=/muse-canvas/`。示例图片和音频跟随 Vite 的基础路径加载，本地开发和普通构建仍使用根路径。仓库的 **Settings → Pages → Source** 配置为 **GitHub Actions**。
 
-菜单使用 [Base UI Menu](https://base-ui.com/react/components/menu) 处理定位、方向键导航、点击外部关闭与焦点恢复，视觉参考用户提供的 ChatGPT 账户菜单。
+部署方式参考 [GitHub Pages 说明](https://docs.github.com/en/pages/getting-started-with-github-pages/what-is-github-pages)与 [Vite 部署指南](https://vite.dev/guide/static-deploy.html#github-pages)。
 
-## Agent
+## 设计与实现
 
-右侧 Agent 支持对话、引用画板文字、生成便签预览和添加到画板。每个画板独立保存对话，收起侧栏时保留输入草稿。
+项目使用 React 19、TypeScript 和 Vite；设计讲解支持 Markdown 和 Mermaid，相关依赖按需加载。界面支持键盘快捷键、窄屏布局和系统减少动态效果设置。
 
-Agent 固定使用本地演示模式。发送后直接在浏览器生成示例建议，无需配置 Key，也不会访问模型服务。可以停止生成、恢复草稿、预览建议并添加到画板。界面明确标注演示模式，结果不代表真实模型推理。
+- [PRODUCT.md](./PRODUCT.md)：目标用户、产品目的与能力边界。
+- [DESIGN.md](./DESIGN.md)：视觉、排版和交互规范。
+- [src/content/design/](./src/content/design/)：项目内设计讲解的章节内容。
 
-## 代码组织
-
-- `src/model.ts`：画板模型、历史记录、视图计算、导入校验。
-- `src/App.tsx`：工作空间、持久化、画板管理。
-- `src/components/Canvas.tsx`：画布交互与元素渲染。
-- `src/components/Sidebar.tsx`：画板列表。
-- `src/components/AccountMenu.tsx`、`AccountSettings.tsx`：账户入口与设置面板。
-- `src/preferences.ts`：个人资料与画布偏好的加载、校验。
-- `src/components/Agent.tsx`：Agent 对话、草稿与便签结果。
-- `src/localPersistence.ts`：按画板保存的对话草稿。
-- `src/demoAgent.ts`：纯浏览器运行的模拟建议生成。
-- `src/components/DesignGuide.tsx`、`DesignMarkdown.tsx`：讲解弹窗、Markdown 和 Mermaid 渲染。
-- `src/content/design/`：按章节维护的设计讲解 Markdown。
-- `server/index.mjs`：本地生产服务。
-
-## 本地数据与 Welcome
-
-所有需要保留的工作区数据都在当前浏览器：画板与对话使用 `muse-workspace-v3`，个人资料和偏好使用 `muse-preferences-v1`，草稿按画板 ID 单独保存。Node 仅提供静态文件，不包含模型接口。
-
-首次打开、没有有效的画板数据，或删除最后一块画板时，会创建带示例内容的 Welcome。已有有效画板时直接恢复，不额外插入 Welcome。清理浏览器站点数据会清除这些内容。刷新时会将旧 Welcome 的预置案例替换为新版城市漫游案例，保留后来添加的元素与对话；其他画板不变。
-
-## 设计讲解
-
-画板顶部的「设计讲解」打开参考 Fumadocs 布局的阅读弹窗：连续正文与右侧本页目录，不设左侧栏，只保留目录定位与关闭。支持 Markdown、Mermaid 流程图及 URL 章节定位，窄屏使用章节选择器。
-
-直接打开 `http://localhost:5173/#design/overview` 可进入讲解。六个章节分别介绍设计总览、请求流程、本地数据、工具扩展、权限和工程取舍。未实现的工具安装与通用权限执行流程标为「设计方案」，与现有能力区分。章节内容维护在 `src/content/design/*.md`，讲解和图表库按需加载。
-
-项目需求与视觉约束记录在 [PRODUCT.md](PRODUCT.md) 和 [DESIGN.md](DESIGN.md)。
-
-## 字体与排版
-
-- 本地托管 Inter 可变字体，中文使用系统字体；字体许可证见 `public/fonts/OFL.txt`。
-- 界面文字以 13px 为基准，画板正文 16px / 24px，卡片标题 18px / 26px。
-- 画板默认以 100% 缩放打开，使用工具栏手动缩放或适应视图。
-
-## 动效与交互
-
-- 画板列表使用 220ms 的滑动过渡，开关列表时画布内容保持原有屏幕位置。
-- 新增便签使用 200ms 淡入和轻微位移，绘制轨迹与键盘操作即时响应。
-- 弹窗、提示条使用可反向衔接的 CSS 过渡；工具栏提示首次延迟出现，相邻工具立即显示。
-- 拖动、平移、缩放和绘制通过 DOM 与 `requestAnimationFrame` 更新，手势结束后才提交画板数据。
-- 尊重 `prefers-reduced-motion`；减少动态效果时保留淡入反馈，去掉位移、缩放和音频波形动画。
-
-实现使用 CSS 与浏览器 Web Animations API，没有新增动画依赖。弹窗的进出场遵循 [MDN 原生 dialog 动画方式](https://developer.mozilla.org/en-US/docs/Web/HTML/Reference/Elements/dialog#animating_dialogs)。
-
-## 设计技能来源
-
-项目最初用于测试 Emil Kowalski 的设计与交互技能，技能现位于用户级目录 `~/.codex/skills/`，不随应用分发。上游为 [emilkowalski/skills](https://github.com/emilkowalski/skills)，初始参考版本为 `2d228630ba1446365f614a108cb8252f1feda202`（2026-10-13）。
+项目初始设计与交互参考了 [Emil Kowalski 的设计技能](https://github.com/emilkowalski/skills)。本地字体的许可说明见 [public/fonts/OFL.txt](./public/fonts/OFL.txt)。
