@@ -20,6 +20,7 @@ import {
   Minus,
   Plus,
   Redo2,
+  Sparkles,
   Square,
   Trash2,
   Type,
@@ -50,12 +51,16 @@ import { motionAllowed, motionEasing, revealElements } from "../motion";
 
 type Props = {
   onNested: () => void;
+  fitSignal: number;
+  showGrid: boolean;
+  onToggleGrid: () => void;
   board: Board;
   onChange: (value: CanvasSnapshot) => void;
   onUndo: () => void;
   onRedo: () => void;
   canUndo: boolean;
   canRedo: boolean;
+  onAgent: () => void;
   notify: (message: string) => void;
 };
 type Tool = "select" | "hand" | "connect" | "draw";
@@ -70,12 +75,16 @@ type Gesture = {
 };
 export default function Canvas({
   onNested,
+  fitSignal,
+  showGrid,
+  onToggleGrid,
   board,
   onChange,
   onUndo,
   onRedo,
   canUndo,
   canRedo,
+  onAgent,
   notify,
 }: Props) {
   const stage = useRef<HTMLDivElement>(null);
@@ -91,6 +100,7 @@ export default function Canvas({
   );
   const [zoomPercent, setZoomPercent] = useState(100);
   const initialFrame = useRef(true);
+  const lastFitSignal = useRef(fitSignal);
   const frame = useRef(0);
   const toolbar = useRef<HTMLDivElement>(null);
   const tooltipTimer = useRef<ReturnType<typeof setTimeout> | undefined>(
@@ -107,7 +117,6 @@ export default function Canvas({
   const [space, setSpace] = useState(false);
   const [connectFrom, setConnectFrom] = useState<string | null>(null);
   const strokePoints = useRef<Array<[number, number]>>([]);
-  const [grid, setGrid] = useState(true);
   const selectedNode = board.nodes.find((n) => n.id === selected);
   const nodes = board.nodes;
   function stopViewAnimation() {
@@ -190,9 +199,12 @@ export default function Canvas({
     if (initialFrame.current) {
       setView(initialViewport(board.nodes, el.clientWidth));
       initialFrame.current = false;
+    } else if (lastFitSignal.current !== fitSignal) {
+      fit(true);
     }
+    lastFitSignal.current = fitSignal;
     setZoomPercent(Math.round(view.current.z * 100));
-  }, [board.id]);
+  }, [board.id, fitSignal]);
   useEffect(() => {
     const el = stage.current;
     if (!el) return;
@@ -622,7 +634,7 @@ export default function Canvas({
       )}
       <div
         ref={stage}
-        className={`canvas-stage tool-${tool} ${space ? "space-held" : ""} ${grid ? "has-grid" : ""}`}
+        className={`canvas-stage tool-${tool} ${space ? "space-held" : ""} ${showGrid ? "has-grid" : ""}`}
         aria-label="可编辑画布"
         style={{
           backgroundSize: `${24 * view.current.z}px ${24 * view.current.z}px`,
@@ -795,11 +807,14 @@ export default function Canvas({
               <br />
               都值得一块画板。
             </h1>
-            <p>写下第一张便签，让灵感从这里开始。</p>
+            <p>写下第一张便签，或让 Agent 帮你开始。</p>
             <div>
               <button className="primary-button" onClick={() => add("note")}>
                 <Plus size={16} />
                 添加便签
+              </button>
+              <button className="secondary-button" onClick={onAgent}>
+                <Sparkles size={16} />和 Agent 聊聊
               </button>
             </div>
           </div>
@@ -941,10 +956,10 @@ export default function Canvas({
       </div>
       <button
         className="grid-toggle"
-        onClick={() => setGrid(!grid)}
+        onClick={onToggleGrid}
         title="切换画布网格"
         aria-label="切换画布网格"
-        aria-pressed={grid}
+        aria-pressed={showGrid}
       >
         <span>⠿</span>
       </button>

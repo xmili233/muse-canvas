@@ -11,7 +11,7 @@ import {
   workspaceReducer,
 } from "./model.ts";
 
-test("canvas edits undo, redo, and clear future edits", () => {
+test("canvas edits undo and redo without changing the conversation", () => {
   let state = initialWorkspace();
   const original = state.boards[0];
   const added = makeNode("note", 0, 0);
@@ -20,8 +20,14 @@ test("canvas edits undo, redo, and clear future edits", () => {
     id: original.id,
     canvas: { nodes: [...original.nodes, added], edges: original.edges },
   });
+  state = workspaceReducer(state, {
+    type: "messages",
+    id: original.id,
+    messages: [{ id: "message", role: "user", content: "hello" }],
+  });
   state = workspaceReducer(state, { type: "undo", id: original.id });
   assert.equal(state.boards[0].nodes.length, original.nodes.length);
+  assert.equal(state.boards[0].messages[0].content, "hello");
   state = workspaceReducer(state, { type: "redo", id: original.id });
   assert.equal(state.boards[0].nodes.at(-1)?.id, added.id);
   state = workspaceReducer(state, { type: "undo", id: original.id });
@@ -69,16 +75,17 @@ test("import validates finite coordinates, images, and connections", () => {
     }),
   );
 });
-test("loading preserves saved canvas content and discards unused board fields", (t) => {
+test("loading preserves canvas content with or without a conversation", (t) => {
   const board = initialWorkspace().boards[0];
   board.nodes.push(makeNode("note", 20, 30, { content: "保存的内容" }));
+  let saved = { ...board, messages: undefined as typeof board.messages | undefined };
   const storage = Object.getOwnPropertyDescriptor(globalThis, "localStorage");
   Object.defineProperty(globalThis, "localStorage", {
     configurable: true,
     value: {
       getItem: () => JSON.stringify({
         activeId: board.id,
-        boards: [{ ...board, messages: [{ content: "旧对话" }] }],
+        boards: [saved],
       }),
     },
   });
@@ -90,6 +97,9 @@ test("loading preserves saved canvas content and discards unused board fields", 
   assert.equal(loaded.activeId, board.id);
   assert.deepEqual(loaded.boards[0], board);
   assert.equal(loaded.boards[0].nodes.at(-1)?.content, "保存的内容");
+  saved = { ...board, messages: [{ id: "m1", role: "user", content: "旧对话" }] };
+  assert.deepEqual(loadWorkspace().boards[0], saved);
+  assert.ok(!isBoard({ ...board, messages: [{ id: "m1", role: "assistant", content: "test", suggestions: [null] }] }));
 });
 test("fit keeps large and negative-coordinate boards visible", () => {
   const node = makeNode("note", -500, -200, { w: 1000, h: 500 });

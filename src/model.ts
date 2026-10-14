@@ -25,6 +25,20 @@ export type CanvasNode = {
   audio?: string;
 };
 export type Edge = { id: string; from: string; to: string };
+export type Suggestion = {
+  kind: "note" | "text";
+  content: string;
+  label: string;
+  color: string;
+};
+export type Message = {
+  id: string;
+  role: "user" | "assistant";
+  content: string;
+  suggestions?: Suggestion[];
+  applied?: boolean;
+  demo?: boolean;
+};
 export type Board = {
   id: string;
   title: string;
@@ -32,6 +46,7 @@ export type Board = {
   updatedAt: number;
   nodes: CanvasNode[];
   edges: Edge[];
+  messages: Message[];
 };
 export type CanvasSnapshot = Pick<Board, "nodes" | "edges">;
 export type Workspace = {
@@ -46,6 +61,7 @@ export type Action =
   | { type: "delete-board"; id: string }
   | { type: "rename"; id: string; title: string }
   | { type: "canvas"; id: string; canvas: CanvasSnapshot }
+  | { type: "messages"; id: string; messages: Message[] }
   | { type: "undo" | "redo"; id: string };
 
 export const uid = () => crypto.randomUUID();
@@ -82,6 +98,7 @@ export function makeBoard(title = "未命名画板"): Board {
     updatedAt: Date.now(),
     nodes: [],
     edges: [],
+    messages: [],
   };
 }
 export function initialWorkspace(): Workspace {
@@ -225,6 +242,13 @@ export function workspaceReducer(state: Workspace, action: Action): Workspace {
             : b,
         ),
       };
+    case "messages":
+      return {
+        ...state,
+        boards: state.boards.map((b) =>
+          b.id === action.id ? { ...b, messages: action.messages } : b,
+        ),
+      };
     case "canvas": {
       if (!board) return state;
       return {
@@ -304,7 +328,9 @@ export function removeNodes(board: Board, ids: string[]): CanvasSnapshot {
     ),
   };
 }
-export function isBoard(value: unknown): value is Board {
+type StoredBoard = Omit<Board, "messages"> & { messages?: Message[] };
+
+export function isBoard(value: unknown): value is StoredBoard {
   if (!value || typeof value !== "object") return false;
   const b = value as Board;
   return (
@@ -348,7 +374,26 @@ export function isBoard(value: unknown): value is Board {
         typeof e.id === "string" &&
         typeof e.from === "string" &&
         typeof e.to === "string",
-    )
+    ) &&
+    (b.messages === undefined ||
+      (Array.isArray(b.messages) &&
+        b.messages.every(
+          (m) =>
+            m &&
+            typeof m.id === "string" &&
+            ["user", "assistant"].includes(m.role) &&
+            typeof m.content === "string" &&
+            (!m.suggestions ||
+              (Array.isArray(m.suggestions) &&
+                m.suggestions.every(
+                  (s) =>
+                    s &&
+                    ["note", "text"].includes(s.kind) &&
+                    typeof s.content === "string" &&
+                    typeof s.label === "string" &&
+                    typeof s.color === "string",
+                ))),
+        )))
   );
 }
 export function loadWorkspace(): Workspace {
@@ -363,11 +408,10 @@ export function loadWorkspace(): Workspace {
       saved.boards.every(isBoard)
     ) {
       return {
-        boards: saved.boards.map(
-          ({ id, title, icon, updatedAt, nodes, edges }: Board) => ({
-            id, title, icon, updatedAt, nodes, edges,
-          }),
-        ),
+        boards: saved.boards.map((board: StoredBoard) => ({
+          ...board,
+          messages: board.messages ?? [],
+        })),
         activeId: saved.boards.some((b: Board) => b.id === saved.activeId)
           ? saved.activeId
           : saved.boards[0].id,

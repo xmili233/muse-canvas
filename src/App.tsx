@@ -2,8 +2,9 @@ import { useEffect, useReducer, useRef, useState } from "react";
 import {
   ArrowRight,
   Check,
-  Command,
   PanelLeft,
+  PanelRight,
+  Sparkles,
   Grip,
 } from "lucide-react";
 import {
@@ -14,9 +15,21 @@ import {
   workspaceReducer,
   type Board,
   type CanvasSnapshot,
+  type Message,
 } from "./model";
 import Sidebar from "./components/Sidebar";
 import Canvas from "./components/Canvas";
+import Agent from "./components/Agent";
+import type { AgentConnection } from "./agentConnection";
+import AccountSettings, {
+  type SettingsSection,
+} from "./components/AccountSettings";
+import { AboutDialog, ShortcutsDialog } from "./components/WorkspaceHelp";
+import {
+  loadPreferences,
+  PREFERENCES_KEY,
+  type Preferences,
+} from "./preferences";
 import { IconButton, Modal, Toast } from "./components/Ui";
 import { useMotionPreferences } from "./motion";
 
@@ -27,35 +40,52 @@ export default function App() {
     undefined,
     loadWorkspace,
   );
-  const [leftOpen, setLeftOpen] = useState(() => window.innerWidth > 1050);
-  const [compact, setCompact] = useState(() => window.innerWidth <= 900);
-  const [dialog, setDialog] = useState<"help" | "rename" | "delete" | null>(
-    null,
+  const [preferences, setPreferences] = useState(loadPreferences);
+  const [agentConnection, setAgentConnection] =
+    useState<AgentConnection | null>(null);
+  const [settingsSection, setSettingsSection] =
+    useState<SettingsSection>("profile");
+  const [leftOpen, setLeftOpen] = useState(
+    () => window.innerWidth > 1050 && preferences.openSidebar,
   );
+  const [rightOpen, setRightOpen] = useState(
+    () => window.innerWidth > 900 && preferences.openAgent,
+  );
+  const [compact, setCompact] = useState(() => window.innerWidth <= 900);
+  const [dialog, setDialog] = useState<
+    "shortcuts" | "about" | "settings" | "rename" | "delete" | null
+  >(null);
   const [target, setTarget] = useState<Board | null>(null);
   const [name, setName] = useState("");
   const [notice, setNotice] = useState("");
+  const [fitSignal, setFitSignal] = useState(0);
   const [saveError, setSaveError] = useState(false);
   const importRef = useRef<HTMLInputElement>(null);
   useEffect(() => {
     const media = window.matchMedia("(max-width: 900px)");
     function changed() {
       setCompact(media.matches);
-      setLeftOpen(!media.matches && window.innerWidth > 1050);
+      setLeftOpen(
+        !media.matches && window.innerWidth > 1050 && preferences.openSidebar,
+      );
+      setRightOpen(!media.matches && preferences.openAgent);
     }
     media.addEventListener("change", changed);
     return () => media.removeEventListener("change", changed);
-  }, []);
+  }, [preferences.openSidebar, preferences.openAgent]);
   useEffect(() => {
-    if (!compact || !leftOpen) return;
-    const panel = document.querySelector<HTMLElement>(".sidebar");
+    if (!compact || (!leftOpen && !rightOpen)) return;
+    const panel = document.querySelector<HTMLElement>(
+      leftOpen ? ".sidebar" : ".agent-panel",
+    );
     const before = document.activeElement as HTMLElement | null;
     panel
-      ?.querySelector<HTMLElement>("button")
+      ?.querySelector<HTMLElement>(rightOpen ? "textarea" : "button")
       ?.focus({ preventScroll: true });
     const close = (event: KeyboardEvent) => {
       if (event.key === "Escape" && !document.querySelector("dialog[open]")) {
         setLeftOpen(false);
+        setRightOpen(false);
       }
     };
     document.addEventListener("keydown", close);
@@ -64,7 +94,7 @@ export default function App() {
       if (before?.isConnected)
         requestAnimationFrame(() => before.focus({ preventScroll: true }));
     };
-  }, [compact, leftOpen]);
+  }, [compact, leftOpen, rightOpen]);
   const board = state.boards.find((b) => b.id === state.activeId)!;
   useEffect(() => {
     try {
@@ -84,6 +114,7 @@ export default function App() {
   }, [notice]);
   useEffect(() => {
     function onKey(e: KeyboardEvent) {
+      if (document.querySelector("dialog[open]")) return;
       if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "k") {
         e.preventDefault();
         newBoard();
@@ -92,17 +123,43 @@ export default function App() {
         e.key === "?" &&
         !(e.target as HTMLElement).closest("input,textarea,[contenteditable]")
       )
-        setDialog("help");
+        setDialog("shortcuts");
     }
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
   }, []);
+  function openSettings(section: SettingsSection) {
+    setSettingsSection(section);
+    setDialog("settings");
+  }
+  function closeAccountDialog() {
+    setDialog(null);
+    requestAnimationFrame(() => {
+      const trigger = document.querySelector<HTMLButtonElement>(".user-row");
+      if (!trigger?.closest("[inert]")) trigger?.focus({ preventScroll: true });
+    });
+  }
+  function updatePreferences(value: Preferences) {
+    try {
+      localStorage.setItem(PREFERENCES_KEY, JSON.stringify(value));
+      setPreferences(value);
+      return true;
+    } catch {
+      setNotice("偏好保存失败，请检查浏览器存储空间");
+      return false;
+    }
+  }
   function newBoard() {
     dispatch({ type: "add-board", board: makeBoard() });
     if (window.innerWidth <= 900) setLeftOpen(false);
   }
   function toggleLeft() {
     setLeftOpen(!leftOpen);
+    if (window.innerWidth <= 900) setRightOpen(false);
+  }
+  function toggleRight() {
+    setRightOpen(!rightOpen);
+    if (window.innerWidth <= 900) setLeftOpen(false);
   }
   function rename(value: Board) {
     setTarget(value);
@@ -121,12 +178,10 @@ export default function App() {
       dispatch({
         type: "add-board",
         board: {
+          ...value,
           id: uid(),
-          title: value.title,
-          icon: value.icon,
           updatedAt: Date.now(),
-          nodes: value.nodes,
-          edges: value.edges,
+          messages: value.messages ?? [],
         },
       });
       setNotice("画板已导入");
@@ -136,7 +191,9 @@ export default function App() {
     if (importRef.current) importRef.current.value = "";
   }
   return (
-    <div className={`app ${leftOpen ? "left-open" : ""}`}>
+    <div
+      className={`app ${leftOpen ? "left-open" : ""} ${rightOpen ? "right-open" : ""}`}
+    >
       <Sidebar
         open={leftOpen}
         boards={state.boards}
@@ -165,17 +222,26 @@ export default function App() {
           setDialog("delete");
         }}
         onImport={() => importRef.current?.click()}
-        onHelp={() => setDialog("help")}
+        preferences={preferences}
+        onProfile={() => openSettings("profile")}
+        onSettings={() => openSettings("canvas")}
+        onShortcuts={() => setDialog("shortcuts")}
+        onAbout={() => setDialog("about")}
       />
-      <button
-        className="panel-backdrop"
-        data-open={compact && leftOpen}
-        aria-hidden={!(compact && leftOpen)}
-        inert={!(compact && leftOpen)}
-        aria-label="关闭侧栏"
-        onClick={() => setLeftOpen(false)}
-      />
-      <main className="workspace" inert={compact && leftOpen}>
+      {
+        <button
+          className="panel-backdrop"
+          data-open={compact && (leftOpen || rightOpen)}
+          aria-hidden={!(compact && (leftOpen || rightOpen))}
+          inert={!(compact && (leftOpen || rightOpen))}
+          aria-label="关闭侧栏"
+          onClick={() => {
+            setLeftOpen(false);
+            setRightOpen(false);
+          }}
+        />
+      }
+      <main className="workspace" inert={compact && (leftOpen || rightOpen)}>
         <header className="workspace-header">
           <div className="header-title">
             {!leftOpen && (
@@ -202,9 +268,26 @@ export default function App() {
               {saveError ? "保存失败" : <Check size={13} />}
             </span>
           </div>
+          <div className="header-actions">
+            {!rightOpen && (
+              <button className="open-agent" onClick={toggleRight}>
+                <Sparkles size={16} />
+                <span>Agent</span>
+                <PanelRight size={15} />
+              </button>
+            )}
+          </div>
         </header>
         <Canvas
           key={board.id}
+          fitSignal={fitSignal}
+          showGrid={preferences.showGrid}
+          onToggleGrid={() =>
+            updatePreferences({
+              ...preferences,
+              showGrid: !preferences.showGrid,
+            })
+          }
           onNested={() =>
             dispatch({ type: "add-board", board: makeBoard("Untitled canvas") })
           }
@@ -214,9 +297,29 @@ export default function App() {
           onRedo={() => dispatch({ type: "redo", id: board.id })}
           canUndo={!!state.past[board.id]?.length}
           canRedo={!!state.future[board.id]?.length}
+          onAgent={() => {
+            setRightOpen(true);
+            if (window.innerWidth <= 900) setLeftOpen(false);
+          }}
           notify={setNotice}
         />
       </main>
+      <Agent
+        open={rightOpen}
+        connection={agentConnection}
+        onConnectionChange={setAgentConnection}
+        key={board.id}
+        board={board}
+        onClose={toggleRight}
+        onMessages={(messages: Message[]) =>
+          dispatch({ type: "messages", id: board.id, messages })
+        }
+        onChange={(canvas) => {
+          updateCanvas(canvas);
+          setFitSignal((n) => n + 1);
+        }}
+        notify={setNotice}
+      />
       <input
         hidden
         ref={importRef}
@@ -284,40 +387,23 @@ export default function App() {
           </button>
         </div>
       </Modal>
-      <Modal
-        open={dialog === "help"}
-        title="给想法，多一点空间。"
-        onClose={() => setDialog(null)}
-      >
-        <p className="modal-description">
-          Muse 是你的自由创作画板。添加灵感、连接想法，把模糊的念头变清晰。
-          画板自动保存在当前浏览器。
-        </p>
-        <div className="shortcut-list">
-          {[
-            ["V / H", "选择 / 拖动画布"],
-            ["N / T / R", "添加便签 / 文字 / 形状"],
-            ["L", "连接两个元素"],
-            ["Space + 拖动", "平移画布"],
-            ["⌘ / Ctrl + 滚轮", "缩放画布"],
-            ["⌘ / Ctrl + Z", "撤销"],
-            ["⌘ / Ctrl + Shift + Z", "重做"],
-            ["⌘ / Ctrl + D", "复制选中元素"],
-            ["Delete", "删除选中元素"],
-            ["⌘ / Ctrl + K", "新建画板"],
-            ["双击元素", "编辑文字"],
-          ].map(([key, label]) => (
-            <div key={key}>
-              <span>{label}</span>
-              <kbd>{key}</kbd>
-            </div>
-          ))}
-        </div>
-        <div className="help-footer">
-          <Command size={16} />
-          <span>为心流而设计 · Muse 0.1</span>
-        </div>
-      </Modal>
+      <AccountSettings
+        open={dialog === "settings"}
+        initialSection={settingsSection}
+        preferences={preferences}
+        onClose={closeAccountDialog}
+        onSave={(value) => {
+          if (updatePreferences(value)) {
+            closeAccountDialog();
+            setNotice("设置已保存");
+          }
+        }}
+      />
+      <ShortcutsDialog
+        open={dialog === "shortcuts"}
+        onClose={closeAccountDialog}
+      />
+      <AboutDialog open={dialog === "about"} onClose={closeAccountDialog} />
     </div>
   );
 }

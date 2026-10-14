@@ -3,7 +3,6 @@ import {
   Copy,
   Ellipsis,
   Grip,
-  HelpCircle,
   PanelLeftClose,
   Pencil,
   Plus,
@@ -13,6 +12,8 @@ import {
 } from "lucide-react";
 import type { Board } from "../model";
 import { IconButton } from "./Ui";
+import AccountMenu from "./AccountMenu";
+import type { Preferences } from "../preferences";
 
 type Props = {
   open: boolean;
@@ -25,7 +26,11 @@ type Props = {
   onDelete: (board: Board) => void;
   onDuplicate: (board: Board) => void;
   onImport: () => void;
-  onHelp: () => void;
+  preferences: Preferences;
+  onProfile: () => void;
+  onSettings: () => void;
+  onShortcuts: () => void;
+  onAbout: () => void;
 };
 export default function Sidebar(props: Props) {
   const [query, setQuery] = useState("");
@@ -141,11 +146,14 @@ export default function Sidebar(props: Props) {
           <Plus size={14} />
           <span>New space</span>
         </button>
-        <button className="user-row" onClick={props.onHelp}>
-          <span className="user-avatar">z</span>
-          <span>zhiwei wang</span>
-          <HelpCircle className="user-help" size={13} />
-        </button>
+        <AccountMenu
+          sidebarOpen={props.open}
+          preferences={props.preferences}
+          onProfile={props.onProfile}
+          onSettings={props.onSettings}
+          onShortcuts={props.onShortcuts}
+          onAbout={props.onAbout}
+        />
       </div>
     </aside>
   );

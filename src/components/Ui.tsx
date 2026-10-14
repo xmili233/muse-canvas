@@ -51,21 +51,38 @@ export function Modal({
   title,
   children,
   onClose,
+  className = "",
+  origin,
 }: {
   open: boolean;
   title: string;
   children: ReactNode;
   onClose: () => void;
+  className?: string;
+  origin?: DOMRect | null;
 }) {
   const ref = useRef<HTMLDialogElement>(null);
   useLayoutEffect(() => {
-    if (open) ref.current?.showModal();
-    else ref.current?.close();
-  }, [open]);
+    const dialog = ref.current;
+    if (!dialog) return;
+    if (open) {
+      if (origin) {
+        // Capture the trigger before opening the viewport-centered top layer.
+        const x = origin.x + origin.width / 2 - window.innerWidth / 2;
+        const y = origin.y + origin.height / 2 - window.innerHeight / 2;
+        dialog.style.setProperty(
+          "--modal-from",
+          `translate(${x}px, ${y}px) scale(0.94)`,
+        );
+      }
+      dialog.showModal();
+    } else dialog.close();
+  }, [open, origin]);
   return (
     <dialog
       ref={ref}
-      className="modal"
+      className={`modal ${className}`}
+      data-from-trigger={origin ? "true" : undefined}
       onCancel={(e) => {
         e.preventDefault();
         onClose();
