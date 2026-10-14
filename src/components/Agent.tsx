@@ -6,7 +6,6 @@ import {
   Headphones,
   ArrowUp,
   Check,
-  ChevronDown,
   PanelRightClose,
   Plus,
   Square,
@@ -22,17 +21,11 @@ import {
 } from "../model";
 import { IconButton, Modal } from "./Ui";
 import { motionAllowed, motionEasing, revealElements } from "../motion";
-import AgentConnectionForm from "./AgentConnectionForm";
-import type {
-  AgentConnection,
-  ConnectionChoice,
-  ConnectionError,
-} from "../agentConnection";
+import { loadDraft, saveDraft } from "../localPersistence";
+import { createDemoReply } from "../demoAgent";
 
 type Props = {
   open: boolean;
-  connection: AgentConnection | null;
-  onConnectionChange: (connection: AgentConnection | null) => void;
   board: Board;
   onClose: () => void;
   onMessages: (messages: Message[]) => void;
@@ -41,23 +34,16 @@ type Props = {
 };
 export default function Agent({
   open,
-  connection,
-  onConnectionChange,
   board,
   onClose,
   onMessages,
   onChange,
   notify,
 }: Props) {
-  const [input, setInput] = useState("");
+  const [input, setInput] = useState(() => loadDraft(board.id));
   const [busy, setBusy] = useState(false);
   const [context, setContext] = useState(true);
-  const [setupOpen, setSetupOpen] = useState(false);
-  const [connectionOrigin, setConnectionOrigin] = useState<DOMRect | null>(
-    null,
-  );
   const [pendingPrompt, setPendingPrompt] = useState<string | null>(null);
-  const [error, setError] = useState<ConnectionError | null>(null);
   const textarea = useRef<HTMLTextAreaElement>(null);
   const hasActivity = board.messages.length > 0 || !!pendingPrompt;
   const [info, setInfo] = useState(false);
@@ -95,224 +81,69 @@ export default function Agent({
     revealElements(added);
     messageIds.current = new Set(board.messages.map((message) => message.id));
   }, [board.messages]);
-  const controller = useRef<AbortController | null>(null);
+  const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const latest = useRef(board);
   latest.current = board;
-  useEffect(() => () => controller.current?.abort("unmount"), []);
+  useEffect(() => () => {
+    if (timer.current) clearTimeout(timer.current);
+  }, []);
   useEffect(() => {
     scroller.current?.scrollTo({
       top: scroller.current.scrollHeight,
       behavior: "instant",
     });
   }, [board.messages, pendingPrompt, busy]);
+  useEffect(() => {
+    try {
+      saveDraft(board.id, pendingPrompt ?? input);
+    } catch {
+      notify("草稿暂时无法保存到浏览器");
+    }
+  }, [board.id, input, pendingPrompt]);
 
   function prepareTransition() {
     composerBefore.current = composer.current?.getBoundingClientRect() || null;
   }
-  function openConnection(trigger: HTMLElement | null = composer.current) {
-    setConnectionOrigin(trigger?.getBoundingClientRect() || null);
-    setSetupOpen(true);
-  }
-  async function request<T>(
-    path: string,
-    body: unknown,
-    abort: AbortController,
-    method = "POST",
-  ): Promise<T> {
-    const response = await fetch(path, {
-      method,
-      headers: {
-        "Content-Type": "application/json",
-        ...(connection ? { "X-Muse-Connection": connection.token } : {}),
-      },
-      ...(method === "DELETE" ? {} : { body: JSON.stringify(body) }),
-      signal: abort.signal,
-    });
-    const data = await response.json();
-    if (!response.ok)
-      throw Object.assign(
-        new Error(data.error || "暂时无法连接本地服务，请重试。"),
-        { code: data.code },
-      );
-    return data;
-  }
-  function beginRequest() {
-    if (controller.current) return null;
-    const abort = new AbortController();
-    controller.current = abort;
-    setBusy(true);
-    setError(null);
-    const timeout = setTimeout(() => abort.abort("timeout"), 60000);
-    return {
-      abort,
-      finish: () => {
-        clearTimeout(timeout);
-        if (controller.current === abort) {
-          controller.current = null;
-          setBusy(false);
-        }
-      },
-    };
-  }
-  function displayError(
-    value: unknown,
-    abort: AbortController,
-  ): ConnectionError {
-    if (abort.signal.reason === "timeout")
-      return { message: "响应超时，请稍后重试。", code: "timeout" };
-    const failure = value as Error & { code?: string };
-    return {
-      message: failure.code
-        ? failure.message
-        : "暂时无法连接本地服务，请检查网络后重试。",
-      code: failure.code,
-    };
-  }
-  async function runPrompt(prompt: string, choice?: ConnectionChoice) {
-    const running = beginRequest();
-    if (!running) return;
-    const { abort, finish } = running;
+  function send(value = input) {
+    const prompt = value.trim();
+    if (!prompt || timer.current) return;
     const snapshot = latest.current;
     prepareTransition();
     setPendingPrompt(prompt);
     setInput("");
-    try {
-      const data = await request<{
-        connection: AgentConnection;
-        message: string;
-        suggestions: Suggestion[];
-        demo: boolean;
-      }>(
-        "/api/agent",
-        {
-          prompt,
-          board: context
-            ? {
-                title: snapshot.title,
-                nodes: snapshot.nodes.map(({ kind, label, content }) => ({
-                  kind,
-                  label,
-                  content,
-                })),
-              }
-            : { title: "空白画板", nodes: [] },
-          history: snapshot.messages
-            .slice(-8)
-            .map(({ role, content }) => ({ role, content })),
-          ...(choice ? { connection: choice } : {}),
-        },
-        abort,
+    setBusy(true);
+    // Keep the pending and cancel interactions visible in the local demo.
+    timer.current = setTimeout(() => {
+      timer.current = null;
+      const result = createDemoReply(
+        prompt,
+        context ? snapshot : { title: "空白画板", nodes: [] },
       );
-      if (abort.signal.aborted) return;
-      const returnToInput =
-        setupOpen || composer.current?.contains(document.activeElement);
       prepareTransition();
-      onConnectionChange(data.connection);
       onMessages([
         ...snapshot.messages,
         { id: uid(), role: "user", content: prompt },
         {
           id: uid(),
           role: "assistant",
-          content: data.message,
-          suggestions: data.suggestions,
-          demo: data.demo,
+          content: result.message,
+          suggestions: result.suggestions,
+          demo: true,
         },
       ]);
       setPendingPrompt(null);
-      setSetupOpen(false);
-      if (returnToInput)
-        requestAnimationFrame(() =>
-          textarea.current?.focus({ preventScroll: true }),
-        );
-    } catch (value) {
-      if (abort.signal.aborted && abort.signal.reason !== "timeout") return;
-      const failure = displayError(value, abort);
-      setError(failure);
-      if (
-        choice ||
-        failure.code === "connection_required" ||
-        failure.code === "invalid_key"
-      ) {
-        if (!choice) onConnectionChange(null);
-        if (!setupOpen) openConnection();
-      } else {
-        setInput(prompt);
-        setPendingPrompt(null);
-      }
-    } finally {
-      finish();
-    }
+      setBusy(false);
+      textarea.current?.focus({ preventScroll: true });
+    }, 450);
   }
-  function send(value = input) {
-    const prompt = value.trim();
-    if (!prompt || controller.current) return;
-    prepareTransition();
-    setError(null);
-    if (!connection) {
-      setPendingPrompt(prompt);
-      setInput("");
-      openConnection();
-    } else void runPrompt(prompt);
-  }
-  async function chooseConnection(choice: ConnectionChoice) {
-    if (pendingPrompt) {
-      await runPrompt(pendingPrompt, choice);
-      return;
-    }
-    const running = beginRequest();
-    if (!running) return;
-    const { abort, finish } = running;
-    try {
-      const data = await request<{ connection: AgentConnection }>(
-        "/api/connection",
-        { connection: choice },
-        abort,
-      );
-      if (!abort.signal.aborted) {
-        onConnectionChange(data.connection);
-        prepareTransition();
-        setSetupOpen(false);
-        requestAnimationFrame(() =>
-          textarea.current?.focus({ preventScroll: true }),
-        );
-      }
-    } catch (value) {
-      if (!abort.signal.aborted || abort.signal.reason === "timeout")
-        setError(displayError(value, abort));
-    } finally {
-      finish();
-    }
-  }
-  function backToEditor() {
-    controller.current?.abort("cancel");
-    controller.current = null;
+  function cancel() {
+    if (timer.current) clearTimeout(timer.current);
+    timer.current = null;
     prepareTransition();
     setBusy(false);
     setInput(pendingPrompt ?? input);
     setPendingPrompt(null);
-    setSetupOpen(false);
-    setError(null);
-    requestAnimationFrame(() =>
-      textarea.current?.focus({ preventScroll: true }),
-    );
-  }
-  async function disconnect() {
-    const running = beginRequest();
-    if (!running) return;
-    const { abort, finish } = running;
-    try {
-      await request("/api/connection", null, abort, "DELETE");
-      if (!abort.signal.aborted) {
-        onConnectionChange(null);
-        backToEditor();
-      }
-    } catch (value) {
-      if (!abort.signal.aborted || abort.signal.reason === "timeout")
-        setError(displayError(value, abort));
-    } finally {
-      finish();
-    }
+    textarea.current?.focus({ preventScroll: true });
   }
   function apply(message: Message) {
     if (message.applied || !message.suggestions?.length) return;
@@ -351,8 +182,6 @@ export default function Agent({
               composerBefore.current =
                 composer.current?.getBoundingClientRect() || null;
               setPendingPrompt(null);
-              setError(null);
-              setSetupOpen(false);
               onMessages([]);
             }
           }}
@@ -427,9 +256,9 @@ export default function Agent({
                 </span>
               </div>
             )}
-            {busy && !setupOpen && (
+            {busy && (
               <div className="agent-thinking">
-                <span className="mini-mascot">••</span>Thinking
+                <span className="mini-mascot">••</span>正在生成示例
                 <span className="thinking-dots">
                   <i />
                   <i />
@@ -482,11 +311,6 @@ export default function Agent({
               }
             }}
           />
-          {error && !setupOpen && (
-            <p className="agent-request-error" role="alert">
-              {error.message}
-            </p>
-          )}
           <div className="composer-actions">
             <div className="composer-left">
               <button
@@ -499,31 +323,17 @@ export default function Agent({
               >
                 <Paperclip size={13} />
               </button>
-              <button
-                type="button"
-                className="model-picker"
-                onClick={(event) => {
-                  openConnection(event.currentTarget);
-                  setError(null);
-                }}
-                disabled={busy}
-              >
-                <span>
-                  {connection?.mode === "live"
-                    ? connection.model
-                    : connection?.mode === "demo"
-                      ? "模拟模式"
-                      : "连接模型"}
-                </span>
-                <ChevronDown size={11} />
-              </button>
+              <span className="agent-mode">演示模式</span>
             </div>
             <button
               className="send-button"
               type={busy ? "button" : "submit"}
               disabled={!busy && !input.trim()}
               aria-label={busy ? "停止生成" : "发送消息"}
-              onClick={busy ? backToEditor : undefined}
+              onClick={busy ? (event) => {
+                event.preventDefault();
+                cancel();
+              } : undefined}
             >
               {busy ? (
                 <Square size={10} fill="currentColor" />
@@ -535,30 +345,12 @@ export default function Agent({
         </form>
       </div>
       <Modal
-        open={setupOpen}
-        title="连接模型"
-        onClose={backToEditor}
-        className="connection-dialog"
-        origin={connectionOrigin}
-      >
-        <AgentConnectionForm
-          open={setupOpen}
-          connection={connection}
-          hasPendingPrompt={!!pendingPrompt}
-          busy={busy}
-          error={error}
-          onConnect={chooseConnection}
-          onClearError={() => setError(null)}
-          onDisconnect={disconnect}
-        />
-      </Modal>
-      <Modal
         open={info}
-        title="What can the agent do?"
+        title="Agent 演示"
         onClose={() => setInfo(false)}
       >
         <p className="modal-description">
-          结合当前画板，梳理思路、延伸创意，并将结果转成便签。
+          在本地模拟整理思路、延伸创意和生成便签的流程，不调用真实模型。
         </p>
         <div className="agent-prompts">
           {[

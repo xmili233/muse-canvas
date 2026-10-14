@@ -1,6 +1,7 @@
-import { useEffect, useReducer, useRef, useState } from "react";
+import { lazy, Suspense, useEffect, useReducer, useRef, useState } from "react";
 import {
   ArrowRight,
+  BookOpen,
   Check,
   PanelLeft,
   PanelRight,
@@ -20,7 +21,10 @@ import {
 import Sidebar from "./components/Sidebar";
 import Canvas from "./components/Canvas";
 import Agent from "./components/Agent";
-import type { AgentConnection } from "./agentConnection";
+import { saveDraft } from "./localPersistence";
+import { designSectionFromHash } from "./designRoute";
+const loadDesignGuide = () => import("./components/DesignGuide");
+const DesignGuide = lazy(loadDesignGuide);
 import AccountSettings, {
   type SettingsSection,
 } from "./components/AccountSettings";
@@ -41,8 +45,10 @@ export default function App() {
     loadWorkspace,
   );
   const [preferences, setPreferences] = useState(loadPreferences);
-  const [agentConnection, setAgentConnection] =
-    useState<AgentConnection | null>(null);
+  const [designOpen, setDesignOpen] = useState(
+    () => designSectionFromHash(location.hash) !== null,
+  );
+  const [designLoaded, setDesignLoaded] = useState(designOpen);
   const [settingsSection, setSettingsSection] =
     useState<SettingsSection>("profile");
   const [leftOpen, setLeftOpen] = useState(
@@ -61,6 +67,36 @@ export default function App() {
   const [fitSignal, setFitSignal] = useState(0);
   const [saveError, setSaveError] = useState(false);
   const importRef = useRef<HTMLInputElement>(null);
+  useEffect(() => {
+    const changed = () => {
+      const open = designSectionFromHash(location.hash) !== null;
+      setDesignOpen(open);
+      if (open) setDesignLoaded(true);
+    };
+    addEventListener("hashchange", changed);
+    return () => removeEventListener("hashchange", changed);
+  }, []);
+  function openDesign() {
+    if (designSectionFromHash(location.hash) === null)
+      history.replaceState(
+        null,
+        "",
+        `${location.pathname}${location.search}#design/overview`,
+      );
+    setDesignLoaded(true);
+    setDesignOpen(true);
+  }
+  function closeDesign() {
+    setDesignOpen(false);
+    if (designSectionFromHash(location.hash) !== null)
+      history.replaceState(null, "", `${location.pathname}${location.search}`);
+    requestAnimationFrame(() =>
+      document
+        .querySelector<HTMLButtonElement>(".design-entry")
+        ?.focus({ preventScroll: true }),
+    );
+  }
+
   useEffect(() => {
     const media = window.matchMedia("(max-width: 900px)");
     function changed() {
@@ -269,6 +305,17 @@ export default function App() {
             </span>
           </div>
           <div className="header-actions">
+            <button
+              type="button"
+              className="design-entry"
+              aria-haspopup="dialog"
+              onPointerEnter={loadDesignGuide}
+              onFocus={loadDesignGuide}
+              onClick={openDesign}
+            >
+              <BookOpen size={14} />
+              设计讲解
+            </button>
             {!rightOpen && (
               <button className="open-agent" onClick={toggleRight}>
                 <Sparkles size={16} />
@@ -306,8 +353,6 @@ export default function App() {
       </main>
       <Agent
         open={rightOpen}
-        connection={agentConnection}
-        onConnectionChange={setAgentConnection}
         key={board.id}
         board={board}
         onClose={toggleRight}
@@ -378,7 +423,14 @@ export default function App() {
           <button
             className="danger-button"
             onClick={() => {
-              if (target) dispatch({ type: "delete-board", id: target.id });
+              if (target) {
+                dispatch({ type: "delete-board", id: target.id });
+                try {
+                  saveDraft(target.id, "");
+                } catch {
+                  /* Board deletion does not depend on draft cleanup. */
+                }
+              }
               setDialog(null);
               setNotice("画板已删除");
             }}
@@ -404,6 +456,17 @@ export default function App() {
         onClose={closeAccountDialog}
       />
       <AboutDialog open={dialog === "about"} onClose={closeAccountDialog} />
+      {designLoaded && (
+        <Suspense
+          fallback={
+            <div className="design-loading" role="status">
+              正在打开设计讲解…
+            </div>
+          }
+        >
+          <DesignGuide open={designOpen} onClose={closeDesign} />
+        </Suspense>
+      )}
     </div>
   );
 }

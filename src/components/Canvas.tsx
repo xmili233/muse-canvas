@@ -712,7 +712,7 @@ export default function Canvas({
               }}
               tabIndex={0}
               aria-label={`${node.kind === "note" ? "便签" : node.kind === "image" ? "图片" : "画布元素"}：${node.label || node.content.slice(0, 35)}`}
-              className={`canvas-node node-${node.kind} ${node.id === "text-file" ? "reference-document" : ""} ${selected === node.id ? "selected" : ""} ${connectFrom === node.id ? "connecting" : ""} ${editing === node.id ? "is-editing" : ""}`}
+              className={`canvas-node node-${node.kind} ${selected === node.id ? "selected" : ""} ${connectFrom === node.id ? "connecting" : ""} ${editing === node.id ? "is-editing" : ""}`}
               style={{
                 left: node.x,
                 top: node.y,
@@ -753,14 +753,8 @@ export default function Canvas({
                 <img src={node.image} alt={node.content} draggable={false} />
               ) : (
                 <>
-                  <div className="node-label">{node.label}</div>
+                  {node.label && <div className="node-label">{node.label}</div>}
                   <div className="node-content">{node.content}</div>
-                  {node.id === "idea" && (
-                    <span className="status-badge">
-                      <span />
-                      In Progress
-                    </span>
-                  )}
                 </>
               )}
               {editing === node.id && (
@@ -881,7 +875,7 @@ export default function Canvas({
             label="添加子画板"
             onClick={() =>
               add("nested", {
-                label: "Untitled canvas",
+                label: "新画板",
                 content: "",
                 w: 240,
                 h: 215,
@@ -913,8 +907,8 @@ export default function Canvas({
             label="添加语音卡片"
             onClick={() =>
               add("audio", {
-                label: "Voice Memo and Transcription",
-                content: "You can create or drop your own voice memo.",
+                label: "语音记录",
+                content: "添加一段录音，也可以写下文字记录。",
                 w: 360,
                 h: 263,
               })

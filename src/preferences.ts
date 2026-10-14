@@ -17,7 +17,7 @@ export type Preferences = {
 };
 
 export const DEFAULT_PREFERENCES: Preferences = {
-  name: "zhiwei wang",
+  name: "ZW",
   avatarColor: AVATAR_COLORS[0].value,
   showGrid: true,
   openSidebar: true,

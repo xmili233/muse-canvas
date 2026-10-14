@@ -62,6 +62,10 @@ test("import validates finite coordinates, images, and connections", () => {
   const board = initialWorkspace().boards[0];
   assert.ok(isBoard(board));
   assert.ok(!isBoard({ ...board, nodes: [{ ...board.nodes[0], x: NaN }] }));
+  assert.ok(!isBoard({
+    ...board,
+    nodes: [{ ...board.nodes[0], image: "/welcome/../private.webp" }],
+  }));
   assert.ok(
     !isBoard({
       ...board,

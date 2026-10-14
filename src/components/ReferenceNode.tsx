@@ -1,40 +1,7 @@
 import { useRef, useState } from "react";
-import { ArrowUpRight, FileText, Grip, Play, Square } from "lucide-react";
+import { ArrowUpRight, Compass, FileText, Grip, Play, Square } from "lucide-react";
 import type { CanvasNode } from "../model";
 
-export function Flower({ sketch = false }: { sketch?: boolean }) {
-  return (
-    <svg
-      viewBox="0 0 220 220"
-      aria-hidden="true"
-      className={`flower ${sketch ? "sketch" : ""}`}
-    >
-      <g transform="translate(110 110)">
-        {Array.from({ length: 6 }, (_, i) => (
-          <g key={i} transform={`rotate(${i * 60 + (sketch ? 8 : 0)})`}>
-            <path
-              d="M-16 -15 C-20 -38 -36 -55 -27 -76 C-21 -95 9 -103 23 -83 C39 -61 16 -41 15 -15 Z"
-              fill={sketch ? "#1a1a1a" : "white"}
-              stroke={sketch ? "#1a1a1a" : "white"}
-              strokeWidth={sketch ? 9 : 3}
-              strokeLinejoin="round"
-            />
-            {sketch && (
-              <path
-                d="M-10 -20 C-3 -43 -24 -61 -13 -81 M4 -21 C9 -45 21 -55 12 -77 M-18 -45 Q4 -27 18 -51"
-                fill="none"
-                stroke="#f4f4f4"
-                strokeWidth="3.5"
-                strokeLinecap="round"
-              />
-            )}
-          </g>
-        ))}
-        <circle r="29" fill={sketch ? "#1a1a1a" : "white"} />
-      </g>
-    </svg>
-  );
-}
 export default function ReferenceNode({
   node,
   onNested,
@@ -79,24 +46,19 @@ export default function ReferenceNode({
       });
       onUpdate({
         audio: data,
-        content: "Audio attached. Double-click to add your transcript.",
+        content: "已添加音频，双击补充文字记录。",
       });
     } catch {
       notify("音频读取失败，请重试");
     }
   }
-  function downloadExample() {
+  function downloadNote() {
     const url = URL.createObjectURL(
-      new Blob(
-        [
-          "Welcome to your canvas.\n\nAttach files, collect ideas, and make space for what comes next.",
-        ],
-        { type: "text/plain" },
-      ),
+      new Blob([`${node.label}\n\n${node.content}`], { type: "text/plain" }),
     );
     const anchor = document.createElement("a");
     anchor.href = url;
-    anchor.download = "Example.txt";
+    anchor.download = `${node.label || "画板笔记"}.txt`;
     anchor.click();
     setTimeout(() => URL.revokeObjectURL(url), 1000);
   }
@@ -122,12 +84,7 @@ export default function ReferenceNode({
     return <div className="banner-title">{node.content}</div>;
   if (node.kind === "sticker")
     return (
-      <>
-        {node.content === "flower" && (
-          <span className="creative-commons">cc</span>
-        )}
-        <Flower sketch={node.content === "doodle"} />
-      </>
+      <Compass className="compass-mark" strokeWidth={1.2} aria-hidden="true" />
     );
   if (node.kind === "audio")
     return (
@@ -144,7 +101,7 @@ export default function ReferenceNode({
           ))}
         </div>
         <div className="audio-controls">
-          <button onClick={() => input.current?.click()}>Replace</button>
+          <button onClick={() => input.current?.click()}>替换音频</button>
           <button
             className="play-voice"
             aria-label={playing ? "停止语音" : "播放语音"}
@@ -160,7 +117,7 @@ export default function ReferenceNode({
             {clock(time)} / {clock(duration)}
           </span>
         </div>
-        <p>Transcription: {node.content}</p>
+        <p>文字记录：{node.content}</p>
         <audio
           ref={audio}
           src={node.audio || "/voice-example.wav"}
@@ -190,9 +147,9 @@ export default function ReferenceNode({
         <ArrowUpRight size={16} className="card-arrow" />
         <h3>{node.label}</h3>
         <p>{node.content}</p>
-        <button onClick={downloadExample}>
+        <button onClick={downloadNote}>
           <FileText size={17} />
-          Example
+          下载文本
         </button>
       </div>
     );
@@ -216,21 +173,28 @@ export default function ReferenceNode({
   if (node.kind === "link")
     return (
       <div className="link-card">
-        <Flower />
+        <Compass className="compass-mark" size={30} strokeWidth={1.5} />
         <strong>{node.label}</strong>
         <small>{node.content}</small>
         <div className="link-footer">
-          <span>causal.so</span>
+          <span>{node.content}</span>
           <ArrowUpRight size={16} />
         </div>
       </div>
     );
-  if (node.kind === "swatch")
+  if (node.kind === "swatch") {
+    const color = /^#[0-9a-f]{6}$/i.test(node.color) ? node.color.slice(1) : "191919";
+    const brightness = [0, 2, 4].reduce(
+      (sum, offset, index) =>
+        sum + parseInt(color.slice(offset, offset + 2), 16) * [0.299, 0.587, 0.114][index],
+      0,
+    );
     return (
-      <div className="swatch-card">
+      <div className="swatch-card" style={{ color: brightness > 160 ? "#344248" : "#f4f4f4" }}>
         <strong>{node.label}</strong>
         <span>{node.content}</span>
       </div>
     );
+  }
   return null;
 }

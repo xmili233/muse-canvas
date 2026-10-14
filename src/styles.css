@@ -480,7 +480,7 @@ kbd {
 .context-clip.enabled {
   color: #737373;
 }
-.model-picker {
+.agent-mode {
   display: flex;
   align-items: center;
   gap: 3px;
@@ -488,6 +488,15 @@ kbd {
   color: #747474;
   padding: 0;
 }
+
+.pending-label {
+  display: block;
+  text-align: right;
+  font-size: 11px;
+  color: #999;
+  margin-top: 5px;
+}
+.message-pending { opacity: 0.8; }
 .send-button {
   display: flex;
   align-items: center;
@@ -749,37 +758,11 @@ kbd {
   font-weight: 400;
   letter-spacing: 0;
 }
-.status-badge {
-  display: inline-flex;
-  align-items: center;
-  gap: 7px;
-  background: #eee;
-  border-radius: 10px;
-  font-size: var(--text-xs);
-  color: #737373;
-  padding: 5px 9px;
-  margin-top: 20px;
-}
-.status-badge > span {
-  height: 17px;
-  width: 17px;
-  border: 2px solid #eab900;
-  border-radius: 50%;
-  position: relative;
-}
-.status-badge > span:after {
-  content: "";
-  position: absolute;
-  left: 6px;
-  top: 0;
-  height: 13px;
-  width: 1px;
-  background: #eab900;
-}
 .node-text {
   padding: 12px;
 }
 .node-text .node-content {
+  max-height: 100%;
   font-size: var(--text-xl);
   line-height: 1.3;
   color: #252525;
@@ -807,6 +790,9 @@ kbd {
   object-fit: contain;
   pointer-events: none;
 }
+.node-image img[src="/welcome/city-walk.webp"] {
+  filter: saturate(0.35);
+}
 .node-attachment,
 .node-nested {
   border-radius: 14px;
@@ -815,34 +801,13 @@ kbd {
 .node-sticker {
   overflow: hidden;
 }
-.node-sticker .flower {
+.node-sticker .compass-mark {
   width: 80%;
   height: 80%;
   position: absolute;
   left: 10%;
-  top: 15%;
-}
-.node-sticker:has(.sketch) .flower {
-  width: 100%;
-  height: 100%;
-  left: 0;
-  top: 0;
-}
-.creative-commons {
-  position: absolute;
-  left: 24px;
-  top: 23px;
-  width: 28px;
-  height: 28px;
-  border-radius: 50%;
-  background: #ddd;
-  color: #222;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: var(--text-base);
-  font-weight: 600;
-  letter-spacing: -1px;
+  top: 10%;
+  color: #f4f4f4;
 }
 .banner-title {
   height: 100%;
@@ -1005,7 +970,7 @@ kbd {
   overflow: hidden;
   color: white;
 }
-.link-card > .flower {
+.link-card > .compass-mark {
   width: 34px;
   height: 34px;
   margin-bottom: 34px;
@@ -1056,7 +1021,8 @@ kbd {
 }
 .swatch-card span {
   font-size: var(--text-sm);
-  color: #aaa;
+  color: inherit;
+  opacity: 0.7;
 }
 .selection-corner,
 .resize-handle {
@@ -1528,16 +1494,6 @@ kbd {
   margin-bottom: 12px;
   font-weight: 500;
 }
-.node-note:has(.status-badge) .node-content {
-  font-size: var(--text-base);
-  line-height: 24px;
-}
-.status-badge {
-  margin-top: 20px;
-  font-size: var(--text-xs);
-  padding: 5px 9px;
-  gap: 7px;
-}
 .nested-card {
   appearance: none;
   display: flex;
@@ -1555,17 +1511,6 @@ kbd {
 .tool-draw,
 .tool-draw .canvas-node {
   cursor: crosshair;
-}
-.reference-document {
-  padding: 22px 24px;
-}
-.reference-document .node-label {
-  margin-bottom: 12px;
-}
-.reference-document .node-content {
-  font-size: var(--text-base);
-  line-height: 24px;
-  letter-spacing: 0;
 }
 .nested-preview:hover {
   background: #ededed;
@@ -1894,3 +1839,6 @@ html[data-input="keyboard"] .agent-panel { transition: none !important; }
   }
   .thinking-dots i { animation: none; }
 }
+.design-entry { display: flex; align-items: center; gap: 6px; padding: 5px 8px; border-radius: 5px; font-size: 12px; color: #696969; white-space: nowrap; }
+.design-entry:hover { background: #e2e2e2; color: #333; }
+.design-loading { position: fixed; inset: 0; display: grid; place-items: center; background: #0002; z-index: 100; color: #333; font-size: 14px; }

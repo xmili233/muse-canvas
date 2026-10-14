@@ -101,107 +101,79 @@ export function makeBoard(title = "未命名画板"): Board {
     messages: [],
   };
 }
-export function initialWorkspace(): Workspace {
+export function makeWelcomeBoard(): Board {
   const board = makeBoard("Welcome");
   board.nodes = [
-    makeNode("banner", 0, 0, {
+    makeNode("text", 0, 0, {
       id: "headline",
-      w: 360,
-      h: 73,
-      content: "Node Examples",
-      label: "",
-      color: "#000000",
-    }),
-    makeNode("note", 0, 97, {
-      id: "idea",
-      w: 360,
-      h: 263,
-      label: "Notes",
-      content:
-        "Are the building blocks of all canvases. Use them to store quick ideas and annotate. You can also added statuses to notes!",
-      color: "#ffffff",
-    }),
-    makeNode("note", 386, 25, {
-      id: "text-file",
-      w: 360,
-      h: 190,
-      label: "Text Files",
-      content:
-        "For longer documents that you want to view in its own tab, create a text file. Alternatively you can add other file formats like PDF, CSV, PSD (just try it).",
-      color: "#ffffff",
-    }),
-    makeNode("attachment", 772, 25, {
-      id: "attach",
-      w: 240,
-      h: 190,
-      label: "Attach",
-      content: "Attach a file to a note by placing it on top.",
-      color: "#ffffff",
-    }),
-    makeNode("audio", 0, 386, {
-      id: "audio",
-      w: 360,
-      h: 263,
-      label: "Voice Memo and Transcription",
-      content: "You can create or drop your own voice memo.",
-      color: "#ffffff",
-    }),
-    makeNode("sticker", 386, 241, {
-      id: "cover",
-      w: 313,
-      h: 313,
-      label: "",
-      content: "flower",
-      color: "#1a1a1a",
-    }),
-    makeNode("attachment", 725, 241, {
-      id: "pdf",
-      w: 313,
-      h: 72,
-      label: "You can add files!",
-      content: "PDF",
-      color: "#ffffff",
-    }),
-    makeNode("nested", 725, 339, {
-      id: "nested",
-      w: 240,
-      h: 215,
-      label: "Canvas inside\na canvas",
-      content: "",
-      color: "#ffffff",
-    }),
-    makeNode("link", 386, 580, {
-      id: "link",
-      w: 407,
-      h: 252,
-      label: "AI canvas workspace\nfor your ideas.",
-      content: "causal.so",
-      color: "#121212",
-    }),
-    makeNode("swatch", 120, 675, {
-      id: "swatch",
-      w: 240,
-      h: 240,
-      label: "#1A1A1A",
-      content: "Colour is important",
-      color: "#1a1a1a",
-    }),
-    makeNode("sticker", 822, 585, {
-      id: "doodle",
-      w: 205,
-      h: 205,
-      label: "",
-      content: "doodle",
+      w: 300,
+      h: 90,
+      content: "离线片刻",
       color: "transparent",
     }),
+    makeNode("image", 0, 104, {
+      id: "cover",
+      w: 300,
+      h: 380,
+      image: "/welcome/offline-poster.svg",
+      content: "OFFLINE，城市漫游字体海报",
+      label: "离线片刻 · 字体提案",
+      color: "#191919",
+    }),
+    makeNode("image", 326, 0, {
+      id: "street",
+      w: 524,
+      h: 350,
+      image: "/welcome/city-walk.webp",
+      content: "蓝门、旧墙与晨光，城市漫游影像参考。",
+      label: "城市漫游 · 影像参考",
+      color: "#efe8dc",
+    }),
+    makeNode("note", 326, 376, {
+      id: "idea",
+      w: 296,
+      h: 200,
+      label: "把注意力还给街道",
+      content: "不设目的地，不赶时间。\n把沿途的光、颜色和偶遇，\n收集成一页周末笔记。",
+      color: "#ffffff",
+    }),
+    makeNode("note", 0, 510, {
+      id: "collect",
+      w: 300,
+      h: 194,
+      label: "这一页，留给细节",
+      content: "一扇旧窗的比例\n一段树影的留白\n一句没来得及记下的话",
+      color: "#ffffff",
+    }),
+    makeNode("swatch", 648, 376, {
+      id: "tone",
+      w: 202,
+      h: 132,
+      label: "雾蓝",
+      content: "#DCE4E7",
+      color: "#dce4e7",
+    }),
+    makeNode("text", 648, 532, {
+      id: "slow-down",
+      w: 202,
+      h: 142,
+      content: "走慢一点，\n看见多一点。",
+      color: "transparent",
+    }),
+    makeNode("attachment", 326, 602, {
+      id: "packing-list",
+      w: 296,
+      h: 172,
+      label: "随身笔记",
+      content: "带上相机，留出一页空白。",
+      color: "#ffffff",
+    }),
   ];
-  board.nodes = board.nodes.map((n) => ({
-    ...n,
-    x: n.x * 0.984,
-    y: n.y * 0.984,
-    w: n.w * 0.984,
-    h: n.h * 0.984,
-  }));
+  return board;
+}
+
+export function initialWorkspace(): Workspace {
+  const board = makeWelcomeBoard();
   return { boards: [board], activeId: board.id, past: {}, future: {} };
 }
 
@@ -220,7 +192,7 @@ export function workspaceReducer(state: Workspace, action: Action): Workspace {
     case "delete-board": {
       if (!board) return state;
       const boards = state.boards.filter((b) => b.id !== action.id);
-      if (!boards.length) boards.push(makeBoard());
+      if (!boards.length) return initialWorkspace();
       const past = { ...state.past };
       const future = { ...state.future };
       delete past[action.id];
@@ -330,6 +302,30 @@ export function removeNodes(board: Board, ids: string[]): CanvasSnapshot {
 }
 type StoredBoard = Omit<Board, "messages"> & { messages?: Message[] };
 
+function refreshWelcomeExample(board: Board): Board {
+  if (
+    board.title !== "Welcome" ||
+    !board.nodes.some((node) => node.id === "headline" &&
+      ["Node Examples", "出门走走，灵感就在路上。"].includes(node.content))
+  ) return board;
+
+  const exampleIds = new Set([
+    "headline", "idea", "text-file", "attach", "audio", "cover",
+    "pdf", "nested", "link", "swatch", "doodle",
+    "slow-down", "afternoon", "collect", "packing-list",
+  ]);
+  const additions = board.nodes.filter((node) => !exampleIds.has(node.id));
+  const nodes = [...makeWelcomeBoard().nodes, ...additions];
+  const ids = new Set(nodes.map((node) => node.id));
+  return {
+    ...board,
+    nodes,
+    edges: board.edges.filter((edge) => ids.has(edge.from) && ids.has(edge.to)),
+    updatedAt: Date.now(),
+  };
+}
+
+
 export function isBoard(value: unknown): value is StoredBoard {
   if (!value || typeof value !== "object") return false;
   const b = value as Board;
@@ -365,6 +361,8 @@ export function isBoard(value: unknown): value is StoredBoard {
         (n.audio === undefined ||
           /^data:audio\/[a-zA-Z0-9.+-]+;base64,/.test(n.audio)) &&
         (n.image === undefined ||
+          n.image === "/welcome/city-walk.webp" ||
+          n.image === "/welcome/offline-poster.svg" ||
           /^data:image\/(png|jpeg|webp|gif);base64,/.test(n.image)),
     ) &&
     Array.isArray(b.edges) &&
@@ -408,7 +406,7 @@ export function loadWorkspace(): Workspace {
       saved.boards.every(isBoard)
     ) {
       return {
-        boards: saved.boards.map((board: StoredBoard) => ({
+        boards: saved.boards.map((board: StoredBoard) => refreshWelcomeExample({
           ...board,
           messages: board.messages ?? [],
         })),

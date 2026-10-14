@@ -1,52 +1,3 @@
-# Emil UI Playground
-
-独立测试 Emil Kowalski 设计与交互技能的空白 Git 项目。
-
-## 开始测试
-
-1. 在 Codex 中将 `/Users/zhiwei/repos/emil-ui-playground` 添加为项目。
-2. 在任意项目的新对话中使用已安装的全局技能。
-3. 明确指定技能和任务，例如：
-
-   > 使用 emil-design-eng，设计并实现一个类似 Causal 的轻量工作区：浅灰画布、紧凑侧栏、底部工具栏和白色内容卡片。先确定布局与层次，再打磨交互细节。完成后在浏览器中检查实际效果。
-
-   或先比较局部设计：
-
-   > 使用 prototype，为底部工具栏制作三个可交互的设计版本，让我直接切换比较。
-
-项目尚未选择应用框架或安装应用依赖，测试任务可以自行指定。
-
-## 已安装技能
-
-技能已安装到用户级目录 `~/.codex/skills/`，本项目不再存放副本，共 15 个：
-
-| 技能 | 用途 |
-| --- | --- |
-| `emil-design-eng` | UI、组件与交互细节 |
-| `prototype` | 制作多个可比较的 UI 版本 |
-| `animate` | Web 动画实现 |
-| `animate-expo` | React Native / Expo 动画 |
-| `review-animations` | 动画审查 |
-| `improve-animations` | 动画改进规划 |
-| `find-animation-opportunities` | 判断适合添加动效的位置 |
-| `animation-performance` | 动画性能排查 |
-| `animation-vocabulary` | 用准确术语描述动效 |
-| `apple-design` | Apple 界面与动效原则 |
-| `mobile-native` | 改善移动 Web 的操作体验 |
-| `pick-ui-library` | 选择合适的 UI 库 |
-| `break-ui` | 用极端数据检验界面 |
-| `ask-sonner` | Sonner 通知组件 |
-| `write-swift` | Swift 开发 |
-
-## 来源版本
-
-- 仓库：[emilkowalski/skills](https://github.com/emilkowalski/skills)
-- 安装日期：2026-10-13
-- 安装时的 `main` 提交：[`2d228630ba1446365f614a108cb8252f1feda202`](https://github.com/emilkowalski/skills/commit/2d228630ba1446365f614a108cb8252f1feda202)
-- 保留上游技能及配套文件原文；许可证见 `~/.codex/skills/LICENSE.emilkowalski`。
-
----
-
 # Muse — 自由创作画板
 
 视觉按用户提供的 Causal 截图实现：极简窄侧栏、浅灰点阵画布、白色节点卡片、底部胶囊工具栏。基于 React 19、TypeScript 和 Vite 的本地 Web 应用。左侧为可收起的画板列表，中间是可编辑画布，右侧是 Agent；两侧可独立收起，窄屏下改为覆盖式侧栏。
@@ -63,7 +14,7 @@ npm run dev
 打开 `http://localhost:5173`。
 
 ```bash
-npm test       # 数据、历史、导入与持久化、画布几何和 Agent 接口测试
+npm test       # 数据、历史、导入与持久化、画布几何和 Agent 模拟逻辑测试
 npm run build # TypeScript 检查和生产构建
 npm start     # 构建后启动本地生产服务，http://localhost:4173
 ```
@@ -72,7 +23,7 @@ npm start     # 构建后启动本地生产服务，http://localhost:4173
 
 - 画板创建、搜索、切换、重命名、复制、删除、JSON 导入。
 - 便签、文字、形状、图片、语音卡片和子画板入口；元素拖动、调整大小、双击编辑、颜色、复制、删除。
-- 自由绘制与语音示例播放；可替换本地音频（不会自动转录）。欢迎画板含参考图对应的节点示例。
+- 自由绘制与语音示例播放；可替换本地音频（不会自动转录）。Welcome 使用原创的「周末城市漫游」案例，包含街景图片、行程与灵感便签、可下载清单。
 - 画布平移、缩放、适应视图、元素连线、撤销与重做。
 - 自动保存在当前浏览器的 localStorage；图片限 2 MB，画板导入限 8 MB。存储不足时显示保存失败提示。
 - 账户菜单、可编辑的本地个人资料、头像颜色、画布偏好、独立快捷键面板。
@@ -88,14 +39,7 @@ npm start     # 构建后启动本地生产服务，http://localhost:4173
 
 右侧 Agent 支持对话、引用画板文字、生成便签预览和添加到画板。每个画板独立保存对话，收起侧栏时保留输入草稿。
 
-首次输入问题并发送时，会从输入区展开居中的连接弹窗。选择平台、模型并输入 Key，或主动选择模拟模式。连接成功后自动继续原问题；失败、取消均保留输入。模拟模式明确标注，不调用真实模型，也不会在真实调用失败后自动启用。
-
-API Key 只由本地 Node 服务在会话内存中临时保管，不写入配置文件、浏览器存储、画板或日志。前端仅保留短期连接标识和非敏感的模型配置；刷新页面需重新选择连接。断开连接会立即删除服务端会话，闲置 30 分钟后过期（后台每分钟清理），关闭本地服务也会清除。连接在当前页面的所有画板间共享。
-
-预置 OpenAI、Anthropic / Claude、Google / Gemini、DeepSeek、千问、硅基流动、OpenRouter 和 Ollama。支持从接口读取模型列表，也可直接输入模型 ID。自定义连接可设置 Base URL，并选择 OpenAI Chat Completions、OpenAI Responses、Anthropic Messages 或 Gemini 协议；预置平台也可展开修改接口地址。
-
-本地服务向选定的平台鉴权并生成回复，用户密钥连接仅接受 localhost / 回环地址访问。外部 API 地址要求 HTTPS，本机地址允许 HTTP，Ollama 等本地接口可不填 Key。单独点击连接会发送一次简短请求验证模型；带着待发送问题连接时只发送原问题一次。所有平台的返回内容都会校验后再呈现为画板建议。
-发送内容包括当前画板文字和最近 8 条对话；可通过输入框旁的回形针关闭画板引用，画板图片不会上传。点击添加后，生成的便签才会写入画布。
+Agent 固定使用本地演示模式。发送后直接在浏览器生成示例建议，无需配置 Key，也不会访问模型服务。可以停止生成、恢复草稿、预览建议并添加到画板。界面明确标注演示模式，结果不代表真实模型推理。
 
 ## 代码组织
 
@@ -106,14 +50,25 @@ API Key 只由本地 Node 服务在会话内存中临时保管，不写入配置
 - `src/components/AccountMenu.tsx`、`AccountSettings.tsx`：账户入口与设置面板。
 - `src/preferences.ts`：个人资料与画布偏好的加载、校验。
 - `src/components/Agent.tsx`：Agent 对话、草稿与便签结果。
-- `server/agent.mjs`：本地演示、输入校验与模型连接。
-- `server/connections.mjs`：仅内存中的连接会话及过期清理。
-- `shared/providers.mjs`：平台预设和协议列表。
-- `server/modelProviders.mjs`：多平台协议、连接校验和模型发现。
-- `src/components/AgentConnectionForm.tsx`：首次使用引导和连接切换。
+- `src/localPersistence.ts`：按画板保存的对话草稿。
+- `src/demoAgent.ts`：纯浏览器运行的模拟建议生成。
+- `src/components/DesignGuide.tsx`、`DesignMarkdown.tsx`：讲解弹窗、Markdown 和 Mermaid 渲染。
+- `src/content/design/`：按章节维护的设计讲解 Markdown。
 - `server/index.mjs`：本地生产服务。
 
-上方保留本项目原始的设计技能说明和来源信息。
+## 本地数据与 Welcome
+
+所有需要保留的工作区数据都在当前浏览器：画板与对话使用 `muse-workspace-v3`，个人资料和偏好使用 `muse-preferences-v1`，草稿按画板 ID 单独保存。Node 仅提供静态文件，不包含模型接口。
+
+首次打开、没有有效的画板数据，或删除最后一块画板时，会创建带示例内容的 Welcome。已有有效画板时直接恢复，不额外插入 Welcome。清理浏览器站点数据会清除这些内容。刷新时会将旧 Welcome 的预置案例替换为新版城市漫游案例，保留后来添加的元素与对话；其他画板不变。
+
+## 设计讲解
+
+画板顶部的「设计讲解」打开参考 Fumadocs 布局的阅读弹窗：连续正文与右侧本页目录，不设左侧栏，只保留目录定位与关闭。支持 Markdown、Mermaid 流程图及 URL 章节定位，窄屏使用章节选择器。
+
+直接打开 `http://localhost:5173/#design/overview` 可进入讲解。六个章节分别介绍设计总览、请求流程、本地数据、工具扩展、权限和工程取舍。未实现的工具安装与通用权限执行流程标为「设计方案」，与现有能力区分。章节内容维护在 `src/content/design/*.md`，讲解和图表库按需加载。
+
+项目需求与视觉约束记录在 [PRODUCT.md](PRODUCT.md) 和 [DESIGN.md](DESIGN.md)。
 
 ## 字体与排版
 
@@ -130,3 +85,7 @@ API Key 只由本地 Node 服务在会话内存中临时保管，不写入配置
 - 尊重 `prefers-reduced-motion`；减少动态效果时保留淡入反馈，去掉位移、缩放和音频波形动画。
 
 实现使用 CSS 与浏览器 Web Animations API，没有新增动画依赖。弹窗的进出场遵循 [MDN 原生 dialog 动画方式](https://developer.mozilla.org/en-US/docs/Web/HTML/Reference/Elements/dialog#animating_dialogs)。
+
+## 设计技能来源
+
+项目最初用于测试 Emil Kowalski 的设计与交互技能，技能现位于用户级目录 `~/.codex/skills/`，不随应用分发。上游为 [emilkowalski/skills](https://github.com/emilkowalski/skills)，初始参考版本为 `2d228630ba1446365f614a108cb8252f1feda202`（2026-10-13）。

@@ -6,15 +6,18 @@
   "scripts": {
     "dev": "vite --host 127.0.0.1",
     "build": "tsc --noEmit && vite build",
-    "test": "node --test src/*.test.ts server/agent.test.mjs",
+    "test": "node --test src/*.test.ts",
     "preview": "vite preview --host 127.0.0.1",
     "start": "node server/index.mjs"
   },
   "dependencies": {
     "@base-ui/react": "^1.9.0",
     "lucide-react": "^0.577.0",
+    "mermaid": "^12.2.0",
     "react": "^19.3.0",
-    "react-dom": "^19.3.0"
+    "react-dom": "^19.3.0",
+    "react-markdown": "^10.1.0",
+    "remark-gfm": "^4.0.1"
   },
   "devDependencies": {
     "@types/node": "^24.0.0",
