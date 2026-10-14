@@ -120,7 +120,7 @@ export default function ReferenceNode({
         <p>文字记录：{node.content}</p>
         <audio
           ref={audio}
-          src={node.audio || "/voice-example.wav"}
+          src={node.audio || `${import.meta.env.BASE_URL}voice-example.wav`}
           onPlay={() => setPlaying(true)}
           onPause={() => setPlaying(false)}
           onEnded={() => setPlaying(false)}

@@ -790,7 +790,7 @@ kbd {
   object-fit: contain;
   pointer-events: none;
 }
-.node-image img[src="/welcome/city-walk.webp"] {
+.node-image img[src$="/welcome/city-walk.webp"] {
   filter: saturate(0.35);
 }
 .node-attachment,

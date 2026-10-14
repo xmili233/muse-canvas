@@ -750,7 +750,13 @@ export default function Canvas({
                   notify={notify}
                 />
               ) : node.kind === "image" ? (
-                <img src={node.image} alt={node.content} draggable={false} />
+                <img
+                  src={node.image?.startsWith("/")
+                    ? `${import.meta.env.BASE_URL}${node.image.slice(1)}`
+                    : node.image}
+                  alt={node.content}
+                  draggable={false}
+                />
               ) : (
                 <>
                   {node.label && <div className="node-label">{node.label}</div>}
