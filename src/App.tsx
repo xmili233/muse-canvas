@@ -36,6 +36,7 @@ import {
 } from "./preferences";
 import { IconButton, Modal, Toast } from "./components/Ui";
 import { useMotionPreferences } from "./motion";
+import githubMark from "./assets/github-mark.svg";
 
 export default function App() {
   useMotionPreferences();
@@ -305,17 +306,29 @@ export default function App() {
             </span>
           </div>
           <div className="header-actions">
-            <button
-              type="button"
-              className="design-entry"
-              aria-haspopup="dialog"
-              onPointerEnter={loadDesignGuide}
-              onFocus={loadDesignGuide}
-              onClick={openDesign}
-            >
-              <BookOpen size={14} />
-              设计讲解
-            </button>
+            <nav className="project-links" aria-label="项目相关">
+              <button
+                type="button"
+                className="design-entry"
+                aria-haspopup="dialog"
+                onPointerEnter={loadDesignGuide}
+                onFocus={loadDesignGuide}
+                onClick={openDesign}
+              >
+                <BookOpen size={14} aria-hidden="true" />
+                设计讲解
+              </button>
+              <a
+                className="github-entry"
+                href="https://github.com/xmili233/muse-canvas"
+                target="_blank"
+                rel="noopener noreferrer"
+                aria-label="在 GitHub 查看源代码"
+                title="在 GitHub 查看源代码"
+              >
+                <img src={githubMark} width={20} height={20} alt="" />
+              </a>
+            </nav>
             {!rightOpen && (
               <button className="open-agent" onClick={toggleRight}>
                 <Sparkles size={16} />

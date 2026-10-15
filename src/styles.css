@@ -334,6 +334,7 @@ kbd {
 .header-actions {
   display: flex;
   align-items: center;
+  flex-shrink: 0;
   gap: 4px;
 }
 .open-agent {
@@ -1839,6 +1840,13 @@ html[data-input="keyboard"] .agent-panel { transition: none !important; }
   }
   .thinking-dots i { animation: none; }
 }
-.design-entry { display: flex; align-items: center; gap: 6px; height: 30px; padding: 0 12px; border-radius: 8px; font-size: var(--text-sm); font-weight: 500; color: #fff; background: #333; white-space: nowrap; }
+.project-links { display: flex; align-items: center; flex: none; gap: 8px; }
+.design-entry { display: flex; align-items: center; justify-content: center; gap: 6px; height: 30px; padding: 0 12px; border: 0; border-radius: 8px; font-size: var(--text-sm); font-weight: 500; line-height: 20px; color: #fff; background: #333; white-space: nowrap; }
 .design-entry:hover { background: #555; }
+.github-entry { display: inline-flex; align-items: center; justify-content: center; flex: none; width: 32px; height: 30px; border-radius: 8px; }
+.github-entry:hover { background: #ddd; }
+.github-entry img { display: block; width: 20px; height: 20px; }
+@media (pointer: coarse) {
+  .project-links .design-entry, .github-entry { min-width: 44px; min-height: 44px; }
+}
 .design-loading { position: fixed; inset: 0; display: grid; place-items: center; background: #0002; z-index: 100; color: #333; font-size: 14px; }
