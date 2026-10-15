@@ -363,7 +363,7 @@ kbd {
   min-height: 44px;
   display: flex;
   align-items: center;
-  justify-content: flex-start;
+  justify-content: flex-end;
   gap: 3px;
   padding: 0 10px;
 }
@@ -382,7 +382,7 @@ kbd {
   background: #dbdbdb;
   white-space: nowrap;
   color: #545454;
-  margin-right: auto;
+  margin-right: 4px;
 }
 .new-chat:hover {
   background: #cecece;
@@ -1839,6 +1839,6 @@ html[data-input="keyboard"] .agent-panel { transition: none !important; }
   }
   .thinking-dots i { animation: none; }
 }
-.design-entry { display: flex; align-items: center; gap: 6px; padding: 5px 8px; border-radius: 5px; font-size: 12px; color: #696969; white-space: nowrap; }
-.design-entry:hover { background: #e2e2e2; color: #333; }
+.design-entry { display: flex; align-items: center; gap: 6px; height: 30px; padding: 0 12px; border-radius: 8px; font-size: var(--text-sm); font-weight: 500; color: #fff; background: #333; white-space: nowrap; }
+.design-entry:hover { background: #555; }
 .design-loading { position: fixed; inset: 0; display: grid; place-items: center; background: #0002; z-index: 100; color: #333; font-size: 14px; }
